@@ -874,14 +874,11 @@ dependencies = [
 [[package]]
 name = "ethereum-interfaces"
 version = "0.1.0"
-source = "git+https://github.com/ledgerwatch/interfaces#22319d5564e923ad4a364db4b714b4889df0e2da"
 dependencies = [
  "arrayref",
  "ethereum-types",
  "prost",
- "prost-build",
  "tonic",
- "tonic-build",
 ]
 
 [[package]]
