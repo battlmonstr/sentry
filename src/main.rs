@@ -376,86 +376,86 @@ async fn main() -> anyhow::Result<()> {
         info!("Peers restricted to range {}", cidr_filter);
     }
 
-    let mut discovery_tasks = StreamMap::new();
+    let mut discovery_tasks: StreamMap<String, Discovery> = StreamMap::new();
 
-    info!("Starting DNS discovery fetch from {}", opts.dnsdisc_address);
-    let dns_resolver = dnsdisc::Resolver::new(Arc::new(
-        TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default())
-            .context("Failed to start DNS resolver")?,
-    ));
+    // info!("Starting DNS discovery fetch from {}", opts.dnsdisc_address);
+    // let dns_resolver = dnsdisc::Resolver::new(Arc::new(
+    //     TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default())
+    //         .context("Failed to start DNS resolver")?,
+    // ));
+    //
+    // discovery_tasks.insert(
+    //     "dnsdisc".to_string(),
+    //     Box::pin(DnsDiscovery::new(
+    //         Arc::new(dns_resolver),
+    //         opts.dnsdisc_address,
+    //         None,
+    //     )) as Discovery,
+    // );
+    //
+    // info!("Starting discv4 at port {}", opts.discv4_port);
+    //
+    // let mut bootstrap_nodes = opts
+    //     .discv4_bootnodes
+    //     .into_iter()
+    //     .map(|Discv4NR(nr)| nr)
+    //     .collect::<Vec<_>>();
+    //
+    // if bootstrap_nodes.is_empty() {
+    //     bootstrap_nodes = BOOTNODES
+    //         .iter()
+    //         .map(|b| Ok(Discv4NR::from_str(b)?.0))
+    //         .collect::<Result<Vec<_>, <Discv4NR as FromStr>::Err>>()?;
+    //     info!("Using default discv4 bootstrap nodes");
+    // }
+    // discovery_tasks.insert(
+    //     "discv4".to_string(),
+    //     Box::pin(
+    //         Discv4Builder::default()
+    //             .with_cache(opts.discv4_cache)
+    //             .with_concurrent_lookups(opts.discv4_concurrent_lookups)
+    //             .build(
+    //                 discv4::Node::new(
+    //                     format!("0.0.0.0:{}", opts.discv4_port).parse().unwrap(),
+    //                     secret_key,
+    //                     bootstrap_nodes,
+    //                     None,
+    //                     true,
+    //                     opts.listen_port,
+    //                 )
+    //                 .await
+    //                 .unwrap(),
+    //             ),
+    //     ),
+    // );
 
-    discovery_tasks.insert(
-        "dnsdisc".to_string(),
-        Box::pin(DnsDiscovery::new(
-            Arc::new(dns_resolver),
-            opts.dnsdisc_address,
-            None,
-        )) as Discovery,
-    );
-
-    info!("Starting discv4 at port {}", opts.discv4_port);
-
-    let mut bootstrap_nodes = opts
-        .discv4_bootnodes
-        .into_iter()
-        .map(|Discv4NR(nr)| nr)
-        .collect::<Vec<_>>();
-
-    if bootstrap_nodes.is_empty() {
-        bootstrap_nodes = BOOTNODES
-            .iter()
-            .map(|b| Ok(Discv4NR::from_str(b)?.0))
-            .collect::<Result<Vec<_>, <Discv4NR as FromStr>::Err>>()?;
-        info!("Using default discv4 bootstrap nodes");
-    }
-    discovery_tasks.insert(
-        "discv4".to_string(),
-        Box::pin(
-            Discv4Builder::default()
-                .with_cache(opts.discv4_cache)
-                .with_concurrent_lookups(opts.discv4_concurrent_lookups)
-                .build(
-                    discv4::Node::new(
-                        format!("0.0.0.0:{}", opts.discv4_port).parse().unwrap(),
-                        secret_key,
-                        bootstrap_nodes,
-                        None,
-                        true,
-                        opts.listen_port,
-                    )
-                    .await
-                    .unwrap(),
-                ),
-        ),
-    );
-
-    if opts.discv5 {
-        let addr = opts
-            .discv5_addr
-            .ok_or_else(|| anyhow!("no discv5 addr specified"))?;
-        let enr = opts
-            .discv5_enr
-            .ok_or_else(|| anyhow!("discv5 ENR not specified"))?;
-
-        let mut svc = discv5::Discv5::new(
-            enr,
-            discv5::enr::CombinedKey::Secp256k1(
-                k256::ecdsa::SigningKey::from_bytes(secret_key.as_ref()).unwrap(),
-            ),
-            Default::default(),
-        )
-        .map_err(|e| anyhow!("{}", e))?;
-        svc.start(addr.parse()?)
-            .await
-            .map_err(|e| anyhow!("{}", e))
-            .context("Failed to start discv5")?;
-        info!("Starting discv5 at {}", addr);
-
-        for bootnode in opts.discv5_bootnodes {
-            svc.add_enr(bootnode).unwrap();
-        }
-        discovery_tasks.insert("discv5".to_string(), Box::pin(Discv5::new(svc, 20)));
-    }
+    // if opts.discv5 {
+    //     let addr = opts
+    //         .discv5_addr
+    //         .ok_or_else(|| anyhow!("no discv5 addr specified"))?;
+    //     let enr = opts
+    //         .discv5_enr
+    //         .ok_or_else(|| anyhow!("discv5 ENR not specified"))?;
+    //
+    //     let mut svc = discv5::Discv5::new(
+    //         enr,
+    //         discv5::enr::CombinedKey::Secp256k1(
+    //             k256::ecdsa::SigningKey::from_bytes(secret_key.as_ref()).unwrap(),
+    //         ),
+    //         Default::default(),
+    //     )
+    //     .map_err(|e| anyhow!("{}", e))?;
+    //     svc.start(addr.parse()?)
+    //         .await
+    //         .map_err(|e| anyhow!("{}", e))
+    //         .context("Failed to start discv5")?;
+    //     info!("Starting discv5 at {}", addr);
+    //
+    //     for bootnode in opts.discv5_bootnodes {
+    //         svc.add_enr(bootnode).unwrap();
+    //     }
+    //     discovery_tasks.insert("discv5".to_string(), Box::pin(Discv5::new(svc, 20)));
+    // }
 
     if !opts.static_peers.is_empty() {
         info!("Enabling static peers: {:?}", opts.static_peers);
