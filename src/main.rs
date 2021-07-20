@@ -294,7 +294,7 @@ impl CapabilityServer for CapabilityServerImpl {
     }
     #[instrument(skip(self, peer, event), level = "debug", fields(peer=&*peer.to_string(), event=&*event.to_string()))]
     async fn on_peer_event(&self, peer: PeerId, event: InboundEvent) {
-        debug!("Received message");
+        debug!("Received message: {:?}", event);
 
         if let Some(ev) = self.handle_event(peer, event).await.transpose() {
             let _ = self
