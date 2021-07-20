@@ -337,20 +337,11 @@ async fn main() -> anyhow::Result<()> {
     } else {
         EnvFilter::from_default_env()
     };
-    let registry = tracing_subscriber::registry()
-        // the `TasksLayer` can be used in combination with other `tracing` layers...
-        .with(tracing_subscriber::fmt::layer());
 
-    if opts.tokio_console {
-        let (layer, server) = console_subscriber::TasksLayer::new();
-        registry
-            .with(filter.add_directive("tokio=trace".parse()?))
-            .with(layer)
-            .init();
-        tokio::spawn(async move { server.serve().await.expect("server failed") });
-    } else {
-        registry.with(filter).init();
-    }
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_ansi(false)
+        .init();
 
     let secret_key;
     if let Some(data) = opts.node_key {
