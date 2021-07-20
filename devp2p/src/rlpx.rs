@@ -281,7 +281,7 @@ where
                 };
 
                 if let Some((message, trigger)) = egress {
-                    trace!("Sending message: {:?}", message);
+                    debug!("Sending message: {:?}", message);
 
                     // Send egress message, force disconnect on error.
                     if let Err(e) = sink.send(message).await {
