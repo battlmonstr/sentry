@@ -467,32 +467,53 @@ impl OptsDiscStatic {
     }
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let opts: Opts = Opts::parse();
-
-    let filter = if std::env::var(EnvFilter::DEFAULT_ENV)
+fn make_tracing_env_filter() -> EnvFilter {
+    if std::env::var(EnvFilter::DEFAULT_ENV)
         .unwrap_or_default()
         .is_empty()
     {
         EnvFilter::new("ethereum_sentry=info,devp2p=info,discv4=info,discv5=info,dnsdisc=info")
     } else {
         EnvFilter::from_default_env()
-    };
-    let registry = tracing_subscriber::registry()
-        // the `TasksLayer` can be used in combination with other `tracing` layers...
-        .with(tracing_subscriber::fmt::layer());
+    }
+}
 
-    if opts.tokio_console {
+macro_rules! make_tracing_registry {
+    () => {
+        tracing_subscriber::registry()
+            // the `TasksLayer` can be used in combination with other `tracing` layers...
+            .with(tracing_subscriber::fmt::layer())
+    };
+}
+
+#[cfg(feature = "console-subscriber")]
+fn init_tracing(with_tokio_console: bool) {
+    let registry = make_tracing_registry!();
+    let filter = make_tracing_env_filter();
+    if with_tokio_console {
         let (layer, server) = console_subscriber::TasksLayer::new();
         registry
-            .with(filter.add_directive("tokio=trace".parse()?))
+            .with(filter.add_directive("tokio=trace".parse().unwrap()))
             .with(layer)
             .init();
         tokio::spawn(async move { server.serve().await.expect("server failed") });
     } else {
         registry.with(filter).init();
     }
+}
+
+#[cfg(not(feature = "console-subscriber"))]
+fn init_tracing(_with_tokio_console: bool) {
+    let registry = make_tracing_registry!();
+    let filter = make_tracing_env_filter();
+    registry.with(filter).init();
+}
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let opts: Opts = Opts::parse();
+
+    init_tracing(opts.tokio_console);
 
     let secret_key;
     if let Some(data) = opts.node_key {

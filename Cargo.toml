@@ -15,7 +15,7 @@ async-trait = "0.1"
 bytes = "1"
 cidr = "0.2"
 clap = "3.0.0-beta.2"
-console-subscriber = { git = "https://github.com/tokio-rs/console" }
+console-subscriber = { git = "https://github.com/tokio-rs/console", optional = true }
 derive_more = "0.99"
 devp2p = { path = "devp2p", features = ["discv4", "discv5", "dnsdisc"] }
 discv4 = { path = "discv4" }
